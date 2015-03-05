@@ -33,12 +33,12 @@ the gem outside of Rails there are a few things you need to do:
 
 1. Set the database connection. This needs to be an ActiveRecord connection.
 
-       PgJbuilder.connection = ActiveRecord::Base.connection
+        PgJbuilder.connection = ActiveRecord::Base.connection
   This can also be a lambda{} that when called returns a connection.
 
 2. Set the path where your queries will be. For example if your queries are in the app/queries directory:
 
-       PgJbuilder.paths.unshift File.join(File.dirname(__FILE__),'app','queries')
+        PgJbuilder.paths.unshift File.join(File.dirname(__FILE__),'app','queries')
 
 3. The examples below are for Rails. For non-Rails applications where
    the examples below use `select_object` and `select_array` you can use
@@ -65,10 +65,10 @@ by creating an initializer and adding a different path to `PgJbuilder.paths` (se
 
   ```sql
   SELECT
-     users.id,
-     users.email,
-     users.first_name,
-     users.last_name
+    users.id,
+    users.email,
+    users.first_name,
+    users.last_name
   FROM users
   WHERE id = {{id}}
   ORDER BY id ASC
@@ -79,9 +79,9 @@ by creating an initializer and adding a different path to `PgJbuilder.paths` (se
 
   ```ruby
   class User < ActiveRecord::Base
-     def show_json
-       select_object 'users/show', id: id
-     end
+    def show_json
+      select_object 'users/show', id: id
+    end
   end
   ```
 
@@ -93,10 +93,10 @@ by creating an initializer and adding a different path to `PgJbuilder.paths` (se
   This query would return a JSON object like:
   ```json
   {
-     "id": 1,
-     "email": "mbolton@initech.com",
-     "first_name": "Michael",
-     "last_name": "Bolton"
+    "id": 1,
+    "email": "mbolton@initech.com",
+    "first_name": "Michael",
+    "last_name": "Bolton"
   }
   ```
 
@@ -109,17 +109,17 @@ by creating an initializer and adding a different path to `PgJbuilder.paths` (se
 
   ```ruby
   class UsersController < ApplicationController
-     before_filter :load_user
-    
-     def show
-       render json: @user.show_json
-     end
+    before_filter :load_user
 
-     private
+    def show
+      render json: @user.show_json
+    end
 
-     def load_user
-       @user = User.find(params[:id])
-     end
+    private
+
+    def load_user
+      @user = User.find(params[:id])
+    end
   end
   ```
 
@@ -131,10 +131,10 @@ by creating an initializer and adding a different path to `PgJbuilder.paths` (se
 
   ```sql
   SELECT
-     users.id,
-     users.email,
-     users.first_name,
-     users.last_name
+    users.id,
+    users.email,
+    users.first_name,
+    users.last_name
   FROM users
   ORDER BY id
   ```
@@ -143,9 +143,9 @@ by creating an initializer and adding a different path to `PgJbuilder.paths` (se
 
   ```ruby
   class User < ActiveRecord::Base
-     def self.index_json
-       select_array 'users/index'
-     end
+    def self.index_json
+      select_array 'users/index'
+    end
   end
   ```
 
@@ -153,24 +153,24 @@ by creating an initializer and adding a different path to `PgJbuilder.paths` (se
 
   ```json
   [
-     {
-       "id": 1,
-       "email": "mbolton@initech.com",
-       "first_name": "Michael",
-       "last_name": "Bolton"
-     },
-     {
-       "id": 2,
-       "email": "pgibbons@initech.com",
-       "first_name": "Peter",
-       "last_name": "Gibbons"
-     },
-     {
-       "id": 3,
-       "email": "snagheenanajar@initech.com",
-       "first_name": "Samir",
-       "last_name": "Nagheenanajar"
-     }
+    {
+      "id": 1,
+      "email": "mbolton@initech.com",
+      "first_name": "Michael",
+      "last_name": "Bolton"
+    },
+    {
+      "id": 2,
+      "email": "pgibbons@initech.com",
+      "first_name": "Peter",
+      "last_name": "Gibbons"
+    },
+    {
+      "id": 3,
+      "email": "snagheenanajar@initech.com",
+      "first_name": "Samir",
+      "last_name": "Nagheenanajar"
+    }
   ]
   ```
 
@@ -179,9 +179,9 @@ by creating an initializer and adding a different path to `PgJbuilder.paths` (se
 
   ```ruby
   class UsersController < ApplicationController
-     def index
-       render json: User.index_json
-     end
+    def index
+      render json: User.index_json
+    end
   end
   ```
 
