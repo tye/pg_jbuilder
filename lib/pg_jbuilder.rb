@@ -24,24 +24,23 @@ module PgJbuilder
         block.call
         _erbout << ")object_row)"
       else
-        content = include(query, variables)
+        "(SELECT COALESCE(row_to_json(object_row),'{}'::json) FROM (\n" +
+          include(query, variables) +
+          "\n)object_row)"
       end
-      
-      # "(SELECT COALESCE(row_to_json(object_row),'{}'::json) FROM (" +
-      #   content +
-      #   ")object_row)"
     end
     
     def array(query=nil, variables={}, &block)
       if block_given?
-        content = yield
+        _erbout = block.binding.eval('_erbout')
+        _erbout << "(SELECT COALESCE(array_to_json(array_agg(row_to_json(array_row))),'[]'::json) FROM ("
+        block.call
+        _erbout << ")array_row)"
       else
-        content = include(query, variables)
+        "(SELECT COALESCE(array_to_json(array_agg(row_to_json(array_row))),'[]'::json) FROM (\n" +
+          include(query, variables) +
+          "\n)array_row)"
       end
-      
-      "(SELECT COALESCE(array_to_json(array_agg(row_to_json(array_row))),'[]'::json) FROM (" +
-        content +
-        ")array_row)"
     end
     
     def quote(value)

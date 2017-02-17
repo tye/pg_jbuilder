@@ -2,8 +2,31 @@ module PgJbuilder
   class Railtie < Rails::Railtie
     initializer 'pg_jbuilder_rails_railtie.configure_rails_initialization' do
       ::PgJbuilder.paths.unshift Rails.root.join('app','queries')
-      ActiveRecord::Base.send(:include, ActiveRecordExtension)
-      PgJbuilder.connection = lambda { ActiveRecord::Base.connection }
+    end
+    
+    initializer "pg_jbuilder_rails_railtie.configure_view_controller" do |app|
+      ActiveSupport.on_load :active_record do
+        include ActiveRecordExtension
+        PgJbuilder.connection = lambda { ActiveRecord::Base.connection }
+      end
+
+      ActiveSupport.on_load :action_controller do
+        include MyGem::ActionController::Filters
+      end
+    end
+  end
+  
+  module ActionControllerExtension
+    extend ActiveSupport::Concern
+    
+    def render_json_array(template, variables={})
+      sql = PgJbuilder.render_array(template, variables)
+      render json: PgJbuilder.connection.select_value(sql)
+    end
+    
+    def render_json_object(template, variables={})
+      sql = PgJbuilder.render_object(template, variables)
+      render json: PgJbuilder.connection.select_value(sql)
     end
   end
 
