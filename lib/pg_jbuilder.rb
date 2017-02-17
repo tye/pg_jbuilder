@@ -50,13 +50,6 @@ module PgJbuilder
     def include(query, variables={})
       dsl = new_sub_dsl(variables)
       PgJbuilder.render(query, variables, dsl: dsl)
-      # render_helper context, value, options
-      #
-      # def self.render_helper context, value, options
-      #   variables = Hash[context.collect{|k,v|[k,v]}]
-      #   options['hash'].each{|k,v| variables[k] = v} if options
-      #   PgJbuilder.render value, variables
-      # end
     end
     
     def get_binding
