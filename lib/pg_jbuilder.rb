@@ -74,7 +74,9 @@ module PgJbuilder
 
   def self.render query, variables={}, options={}
     compiled = @cache[query] || ERB.new(get_query_contents(query))
-    @cache[query] ||= compiled
+    if ::Rails.application.config.cache_classes
+      @cache[query] ||= compiled
+    end
     dsl = options[:dsl] || BuilderDSL.new(variables)
     compiled.result(dsl.get_binding)
   end
