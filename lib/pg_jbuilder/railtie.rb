@@ -7,11 +7,11 @@ module PgJbuilder
     initializer "pg_jbuilder_rails_railtie.configure_view_controller" do |app|
       ActiveSupport.on_load :active_record do
         include ActiveRecordExtension
-        PgJbuilder.connection = lambda { ActiveRecord::Base.connection }
+        ::PgJbuilder.connection = lambda { ActiveRecord::Base.connection }
       end
 
       ActiveSupport.on_load :action_controller do
-        include MyGem::ActionController::Filters
+        include ActionControllerExtension
       end
     end
   end
@@ -27,6 +27,11 @@ module PgJbuilder
     def render_json_object(template, variables={})
       sql = PgJbuilder.render_object(template, variables)
       render json: PgJbuilder.connection.select_value(sql)
+    end
+    
+    def render_value(template, variables={})
+      sql = PgJbuilder.render(template, variables)
+      PgJbuilder.connection.select_value(sql)
     end
   end
 
