@@ -114,7 +114,7 @@ module PgJbuilder
     args.push last_arg
     @paths.each do |path|
       file = File.join(path,*args)
-      if File.exists?(file) && File.file?(file)
+      if File.exist?(file) && File.file?(file)
         return file
       end
     end
