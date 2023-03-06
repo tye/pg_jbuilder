@@ -7,16 +7,16 @@ module PgJbuilder
   ]
   class TemplateNotFound < ::Exception; end
   @cache = {}
-  
+
   class BuilderDSL
     def initialize(variables={})
       @variables = variables
     end
-    
+
     def method_missing(name)
       @variables[name]
     end
-    
+
     def object(query=nil, variables={}, &block)
       if block_given?
         _erbout = block.binding.eval('_erbout')
@@ -29,7 +29,7 @@ module PgJbuilder
           "\n)object_row)"
       end
     end
-    
+
     def array(query=nil, variables={}, &block)
       if block_given?
         _erbout = block.binding.eval('_erbout')
@@ -42,20 +42,23 @@ module PgJbuilder
           "\n)array_row)"
       end
     end
-    
+
     def quote(value)
+      if value.class < ActiveRecord::Base && value.respond_to?(:id)
+        value = value.id
+      end
       PgJbuilder.connection.quote(value)
     end
-    
+
     def include(query, variables={})
       dsl = new_sub_dsl(variables)
       PgJbuilder.render(query, variables, dsl: dsl)
     end
-    
+
     def get_binding
       binding
     end
-    
+
     def new_sub_dsl(variables)
       self.class.new(@variables.merge(variables))
     end
@@ -88,7 +91,7 @@ module PgJbuilder
   def self.connection= value
     @connection = value
   end
-  
+
   def self.clear_cache
     @cache = {}
   end
