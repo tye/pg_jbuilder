@@ -25,7 +25,7 @@ module PgJbuilder
         _erbout << ")object_row)"
       else
         "(SELECT COALESCE(row_to_json(object_row),'{}'::json) FROM (\n" +
-          include(query, variables, include_query_name_comment: false) +
+          include(query, variables) +
           "\n)object_row)"
       end
     end
@@ -38,7 +38,7 @@ module PgJbuilder
         _erbout << ")array_row)"
       else
         "(SELECT COALESCE(array_to_json(array_agg(row_to_json(array_row))),'[]'::json) FROM (\n" +
-          include(query, variables, include_query_name_comment: false) +
+          include(query, variables) +
           "\n)array_row)"
       end
     end
@@ -52,7 +52,7 @@ module PgJbuilder
 
     def include(query, variables={}, options={})
       dsl = new_sub_dsl(variables)
-      PgJbuilder.render(query, variables, dsl: dsl, query_name: false)
+      PgJbuilder.render(query, variables, dsl: dsl, include_query_name_comment: false)
     end
 
     def get_binding
