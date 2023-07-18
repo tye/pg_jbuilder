@@ -83,7 +83,7 @@ module PgJbuilder
     dsl = options[:dsl] || BuilderDSL.new(variables)
     output = []
     if options[:include_query_name_comment] != false
-      output << ["-- query: #{query}"]
+      output << ["\n-- query: #{query}\n"]
     end
     output << compiled.result(dsl.get_binding)
     output.join("\n")
