@@ -1,5 +1,4 @@
 require 'pg_jbuilder/version'
-require 'handlebars'
 require 'pg_jbuilder/railtie' if defined?(Rails)
 
 module PgJbuilder
@@ -7,6 +6,63 @@ module PgJbuilder
     File.join(File.dirname(__FILE__),'..','queries')
   ]
   class TemplateNotFound < ::Exception; end
+  @cache = {}
+
+  class BuilderDSL
+    def initialize(variables={})
+      @variables = variables
+    end
+
+    def method_missing(name)
+      @variables[name]
+    end
+
+    def object(query=nil, variables={}, &block)
+      if block_given?
+        _erbout = block.binding.eval('_erbout')
+        _erbout << "(SELECT COALESCE(row_to_json(object_row),'{}'::json) FROM ("
+        block.call
+        _erbout << ")object_row)"
+      else
+        "(SELECT COALESCE(row_to_json(object_row),'{}'::json) FROM (\n" +
+          include(query, variables) +
+          "\n)object_row)"
+      end
+    end
+
+    def array(query=nil, variables={}, &block)
+      if block_given?
+        _erbout = block.binding.eval('_erbout')
+        _erbout << "(SELECT COALESCE(array_to_json(array_agg(row_to_json(array_row))),'[]'::json) FROM ("
+        block.call
+        _erbout << ")array_row)"
+      else
+        "(SELECT COALESCE(array_to_json(array_agg(row_to_json(array_row))),'[]'::json) FROM (\n" +
+          include(query, variables) +
+          "\n)array_row)"
+      end
+    end
+
+    def quote(value)
+      if value.class < ActiveRecord::Base && value.respond_to?(:id)
+        value = value.id
+      end
+      PgJbuilder.connection.quote(value)
+    end
+
+    def include(query, variables={}, options={})
+      dsl = new_sub_dsl(variables)
+      PgJbuilder.render(query, variables, dsl: dsl, include_query_name_comment: false)
+    end
+
+    def get_binding
+      binding
+    end
+
+    def new_sub_dsl(variables)
+      self.class.new(@variables.merge(variables))
+    end
+  end
 
   def self.render_object *args
     result = render(*args)
@@ -20,9 +76,17 @@ module PgJbuilder
 
 
   def self.render query, variables={}, options={}
-    contents = get_query_contents(query)
-    compiled = handlebars.compile(contents, noEscape: true)
-    compiled.call(variables)
+    compiled = @cache[query] || ERB.new(get_query_contents(query))
+    if ::Rails.application.config.cache_classes
+      @cache[query] ||= compiled
+    end
+    dsl = options[:dsl] || BuilderDSL.new(variables)
+    output = []
+    if options[:include_query_name_comment] != false
+      output << ["\n-- query: #{query}\n"]
+    end
+    output << compiled.result(dsl.get_binding)
+    output.join("\n")
   end
 
   def self.paths
@@ -31,6 +95,10 @@ module PgJbuilder
 
   def self.connection= value
     @connection = value
+  end
+
+  def self.clear_cache
+    @cache = {}
   end
 
   def self.connection
@@ -54,55 +122,10 @@ module PgJbuilder
     args.push last_arg
     @paths.each do |path|
       file = File.join(path,*args)
-      if File.exists?(file) && File.file?(file)
+      if File.exist?(file) && File.file?(file)
         return file
       end
     end
     raise TemplateNotFound.new("Template #{query_name} was not found in any source paths")
   end
-
-  def self.render_helper context, value, options
-    variables = Hash[context.collect{|k,v|[k,v]}]
-    options['hash'].each{|k,v| variables[k] = v} if options
-    PgJbuilder.render value, variables
-  end
-
-  def self.handlebars
-    unless @handlebars
-      @handlebars = Handlebars::Context.new
-      @handlebars.register_helper :include do |context,value,options|
-        render_helper context, value, options
-      end
-
-      @handlebars.register_helper :quote do |context,value,options|
-        connection.quote value
-      end
-
-      @handlebars.register_helper :object do |context,value,options|
-        if value.is_a?(String)
-          content = render_helper(context,value,options)
-          content = "\n#{content}\n"
-        else
-          content = value.fn(context)
-        end
-        "(SELECT COALESCE(row_to_json(object_row),'{}'::json) FROM (" +
-          content +
-          ")object_row)"
-      end
-
-      @handlebars.register_helper :array do |context,value,options|
-        if value.is_a?(String)
-          content = render_helper(context,value,options)
-          content = "\n#{content}\n"
-        else
-          content = value.fn(context)
-        end
-        "(SELECT COALESCE(array_to_json(array_agg(row_to_json(array_row))),'[]'::json) FROM (" +
-          content +
-          ")array_row)"
-      end
-    end
-    @handlebars
-  end
 end
-

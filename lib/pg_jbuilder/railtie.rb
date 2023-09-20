@@ -2,8 +2,39 @@ module PgJbuilder
   class Railtie < Rails::Railtie
     initializer 'pg_jbuilder_rails_railtie.configure_rails_initialization' do
       ::PgJbuilder.paths.unshift Rails.root.join('app','queries')
-      ActiveRecord::Base.send(:include, ActiveRecordExtension)
-      PgJbuilder.connection = lambda { ActiveRecord::Base.connection }
+    end
+    
+    initializer "pg_jbuilder_rails_railtie.configure_view_controller" do |app|
+      ActiveSupport.on_load :active_record do
+        include ActiveRecordExtension
+        ::PgJbuilder.connection = lambda { ActiveRecord::Base.connection }
+      end
+
+      ActiveSupport.on_load :action_controller do
+        include ActionControllerExtension
+      end
+    end
+  end
+  
+  module ActionControllerExtension
+    extend ActiveSupport::Concern
+    
+    def render_json_array(template, variables={})
+      sql = ["-- query: #{template}"]
+      sql << PgJbuilder.render_array(template, variables, include_query_name_comment: false)
+      render json: PgJbuilder.connection.select_value(sql.join("\n"))
+    end
+    
+    def render_json_object(template, variables={})
+      sql = ["-- query: #{template}"]
+      sql << PgJbuilder.render_object(template, variables, include_query_name_comment: false)
+      render json: PgJbuilder.connection.select_value(sql.join("\n"))
+    end
+    
+    def render_value(template, variables={})
+      sql = ["-- query: #{template}"]
+      sql << PgJbuilder.render(template, variables, include_query_name_comment: false)
+      PgJbuilder.connection.select_value(sql.join("\n"))
     end
   end
 
