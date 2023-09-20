@@ -20,18 +20,21 @@ module PgJbuilder
     extend ActiveSupport::Concern
     
     def render_json_array(template, variables={})
-      sql = PgJbuilder.render_array(template, variables)
-      render json: PgJbuilder.connection.select_value(sql)
+      sql = ["-- query: #{template}"]
+      sql << PgJbuilder.render_array(template, variables, include_query_name_comment: false)
+      render json: PgJbuilder.connection.select_value(sql.join("\n"))
     end
     
     def render_json_object(template, variables={})
-      sql = PgJbuilder.render_object(template, variables)
-      render json: PgJbuilder.connection.select_value(sql)
+      sql = ["-- query: #{template}"]
+      sql << PgJbuilder.render_object(template, variables, include_query_name_comment: false)
+      render json: PgJbuilder.connection.select_value(sql.join("\n"))
     end
     
     def render_value(template, variables={})
-      sql = PgJbuilder.render(template, variables)
-      PgJbuilder.connection.select_value(sql)
+      sql = ["-- query: #{template}"]
+      sql << PgJbuilder.render(template, variables, include_query_name_comment: false)
+      PgJbuilder.connection.select_value(sql.join("\n"))
     end
   end
 

@@ -50,9 +50,9 @@ module PgJbuilder
       PgJbuilder.connection.quote(value)
     end
 
-    def include(query, variables={})
+    def include(query, variables={}, options={})
       dsl = new_sub_dsl(variables)
-      PgJbuilder.render(query, variables, dsl: dsl)
+      PgJbuilder.render(query, variables, dsl: dsl, include_query_name_comment: false)
     end
 
     def get_binding
@@ -81,7 +81,12 @@ module PgJbuilder
       @cache[query] ||= compiled
     end
     dsl = options[:dsl] || BuilderDSL.new(variables)
-    compiled.result(dsl.get_binding)
+    output = []
+    if options[:include_query_name_comment] != false
+      output << ["\n-- query: #{query}\n"]
+    end
+    output << compiled.result(dsl.get_binding)
+    output.join("\n")
   end
 
   def self.paths
